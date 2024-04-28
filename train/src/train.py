@@ -98,6 +98,7 @@ if __name__ == "__main__":
     print("len(train_loader) = ", len(train_loader))
     print("steps_per_valid = ", steps_per_valid)
 
+    #NOTE model it self ImageReward
     model = ImageReward(device).to(device)
     
     if opts.preload_path:
