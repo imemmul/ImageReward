@@ -11,10 +11,11 @@ import lpips
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output_dir", type=str)
-    parser.add_argument("--rarity_model_path", type=str)
+    parser.add_argument("--rarity_model_pth", type=str)
     parser.add_argument("--sft_path", type=str)
-    parser.add_argument("--dpok_paths", type=list)
-    parser.add_argument("--dataset_dir", type=str, help="CSV dataset path to take prompts")
+    parser.add_argument("--dpok_paths", type=str)
+    parser.add_argument("--csv_dir", type=str, help="CSV dataset path to take prompts")
+    parser.add_argument("--images_dir", type=str, help="images_dir")
     
 
     return parser.parse_args()
@@ -50,19 +51,21 @@ import torch.nn as nn
 def _load_models(args):
     rarity_model = ViTForImageClassification.from_pretrained('google/vit-base-patch16-224-in21k')
     rarity_model.classifier = nn.Linear(rarity_model.config.hidden_size, 1)
-    rarity_model.load_state_dict(torch.load(args['rarity_model_pth']))
+    rarity_model.load_state_dict(torch.load(args.rarity_model_pth))
     rarity_model.to("cuda")
     rarity_model.eval()
     perp_loss = lpips.LPIPS(net="alex")
     pipes = {}
-    sft_pipe = StableDiffusionPipeline(path=args.sft_path)
+    sft_pipe = StableDiffusionPipeline.from_pretrained(args.sft_path)
     pipes['sft'] = sft_pipe
-    for i, dpok in enumerate(args.dpok_paths): # probably 3 dpok path
-        dpok_model = sft_pipe.load_lora_weights(dpok)
-        pipes[f'dpok_{i}'] = dpok_model
-    
+    print(args.dpok_paths)
+    # for i, dpok in enumerate(args.dpok_paths): # probably 3 dpok path
+    dpok_model = sft_pipe.load_lora_weights(args.dpok_paths) # TODO should copy the sft pipe to load lora weights into different variable
+    pipes[f'dpok_{1}'] = dpok_model
+    print(pipes)
     return rarity_model, perp_loss, pipes
-    
+
+import os
 if __name__ == "__main__":
     args = parse_args()
     rarity_model, perp_model, pipes = _load_models(args)
@@ -71,10 +74,13 @@ if __name__ == "__main__":
         rarity_model,
         perp_model
     )
-    dataset = pd.read_csv(args.dataset_dir)
+    dataset = pd.read_csv(args.csv_dir)
     for idx in range(len(dataset)):
         prompt = dataset['text'][idx]
         real_img_path = dataset['file_name'][idx]
+        path_parts = real_img_path.split('/')
+        path_parts = [part for part in path_parts if part != '.']
+        real_img_path = os.path.join(args.images_dir, *path_parts)
         real_img = Image.open(real_img_path)
         generated_imgs = generate_images(pipes=pipes, prompt=prompt, rank_imgs=rank_imgs_f, args=args)
         rank_imgs_f(generated_imgs, real_img)
