@@ -32,8 +32,8 @@ def _eval(aes, cls, bls, args):
         aes_list.append(aes_val)
         bls_list.append(bls_val)
         cls_list.append(cls_val)
-        print(f"Aesthetic Score: {aes_val}, \n BLIP Score: {bls_val}, \n CLIP Score: {cls_val}")
-    print(f"Aesthetic Score: {np.array(aes_list).mean()}, \n BLIP Score: {np.array(bls_val).mean()}, \n CLIP Score: {np.array(cls_val).mean()}")
+        # print(f"Aesthetic Score: {aes_val}, \n BLIP Score: {bls_val}, \n CLIP Score: {cls_val}")
+    print(f"Aesthetic Score mean: {np.array(aes_list).mean()}, \n BLIP Score mean: {np.array(bls_val).mean()}, \n CLIP Score mean: {np.array(cls_val).mean()}")
 
 if __name__ == "__main__":
     aesthetic_score = utils.load_score(name="Aesthetic")
